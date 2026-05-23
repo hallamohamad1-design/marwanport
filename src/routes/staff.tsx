@@ -13,6 +13,7 @@ function StaffPage() {
   const session = getSession();
   const [rows, setRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
   const load = async () => {
@@ -44,7 +45,8 @@ function StaffPage() {
                 <td style={{ color: "#00d4ff" }}>{r.username}</td>
                 <td><span className={`sk-badge ${r.role === "manager" ? "sk-badge-gold" : "sk-badge-cyan"}`}>{r.role}</span></td>
                 <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                <td>
+                <td style={{ display: "flex", gap: 6 }}>
+                  <button className="sk-btn" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setEditTarget(r)}>EDIT</button>
                   {r.id !== session?.id && (
                     <button className="sk-btn sk-btn-danger" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setConfirmDelete(r)}>DELETE</button>
                   )}
@@ -55,6 +57,7 @@ function StaffPage() {
         </table>
       </div>
       {open && <AddModal onClose={() => { setOpen(false); load(); }} />}
+      {editTarget && <EditModal employee={editTarget} onClose={() => { setEditTarget(null); load(); }} />}
       {confirmDelete && (
         <div onClick={() => setConfirmDelete(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div onClick={(e) => e.stopPropagation()} className="sk-panel" style={{ padding: 24, width: 380 }}>
@@ -71,8 +74,7 @@ function StaffPage() {
   );
 }
 
-function AddModal({ onClose }: { onClose: () => void }) {
-  const [fn, setFn] = useState("");
+function AddModal({ onClose }: { onClose: () => void }) {  const [fn, setFn] = useState("");
   const [un, setUn] = useState("");
   const [pw, setPw] = useState("");
   const [role, setRole] = useState("employee");
@@ -104,6 +106,49 @@ function AddModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
           <button className="sk-btn" onClick={onClose}>CANCEL</button>
           <button className="sk-btn sk-btn-primary" onClick={save}>CREATE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditModal({ employee, onClose }: { employee: any; onClose: () => void }) {
+  const [fn, setFn] = useState(employee.full_name ?? "");
+  const [un, setUn] = useState(employee.username ?? "");
+  const [pw, setPw] = useState("");
+  const [role, setRole] = useState(employee.role ?? "employee");
+
+  const save = async () => {
+    if (!fn.trim() || !un.trim()) { toast.error("Full name and username required"); return; }
+    const updates: Record<string, any> = { full_name: fn.trim(), username: un.trim(), role };
+    if (pw) updates.password = pw;
+    const { error } = await supabase.from("employees").update(updates).eq("id", employee.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Staff updated");
+    onClose();
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+      <div onClick={(e) => e.stopPropagation()} className="sk-panel" style={{ padding: 24, width: 420 }}>
+        <h3 className="sk-heading" style={{ marginTop: 0 }}>EDIT STAFF</h3>
+        <label className="sk-label">FULL NAME</label>
+        <input className="sk-input" value={fn} onChange={(e) => setFn(e.target.value)} />
+        <div style={{ height: 10 }} />
+        <label className="sk-label">USERNAME</label>
+        <input className="sk-input" value={un} onChange={(e) => setUn(e.target.value)} />
+        <div style={{ height: 10 }} />
+        <label className="sk-label">PASSWORD <span style={{ color: "#7d8590", fontWeight: 400 }}>(leave blank to keep current)</span></label>
+        <input className="sk-input" type="password" placeholder="••••••••" value={pw} onChange={(e) => setPw(e.target.value)} />
+        <div style={{ height: 10 }} />
+        <label className="sk-label">ROLE</label>
+        <select className="sk-input" value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="employee">employee</option>
+          <option value="manager">manager</option>
+        </select>
+        <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
+          <button className="sk-btn" onClick={onClose}>CANCEL</button>
+          <button className="sk-btn sk-btn-primary" onClick={save}>SAVE</button>
         </div>
       </div>
     </div>

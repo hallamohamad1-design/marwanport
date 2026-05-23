@@ -15,6 +15,7 @@ type Flight = {
   destination: string;
   origin: string;
   departure_time: string;
+  flight_date: string;
   gate: string;
   terminal: string;
 };
@@ -36,6 +37,7 @@ function CheckInPage() {
 function CheckInInner() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
+  const [flightDate, setFlightDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [name, setName] = useState("");
   const [passport, setPassport] = useState("");
   const [nationality, setNationality] = useState("");
@@ -53,6 +55,14 @@ function CheckInInner() {
       .order("departure_time")
       .then(({ data }) => setFlights((data as Flight[]) ?? []));
   }, []);
+
+  const filteredFlights = useMemo(() => {
+    if (!flightDate) return flights;
+    return flights.filter((f) => f.flight_date === flightDate);
+  }, [flights, flightDate]);
+
+  // Reset selected flight when date changes
+  useEffect(() => { setFlightId(""); }, [flightDate]);
 
   const allowance = ALLOWANCE[klass] ?? 23;
   const overweightKg = Math.max(0, Number(checked) - allowance);
@@ -160,6 +170,15 @@ function CheckInInner() {
             <label className="sk-label">NATIONALITY</label>
             <input className="sk-input" value={nationality} onChange={(e) => setNationality(e.target.value)} />
           </div>
+          <div>
+            <label className="sk-label">FLIGHT DATE</label>
+            <input
+              className="sk-input"
+              type="date"
+              value={flightDate}
+              onChange={(e) => setFlightDate(e.target.value)}
+            />
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
             <div>
               <label className="sk-label">CLASS</label>
@@ -173,9 +192,12 @@ function CheckInInner() {
               <label className="sk-label">FLIGHT</label>
               <select className="sk-input" value={flightId} onChange={(e) => setFlightId(e.target.value)}>
                 <option value="">— SELECT FLIGHT —</option>
-                {flights.map((f) => (
+                {filteredFlights.length === 0 && flightDate ? (
+                  <option disabled>No flights on this date</option>
+                ) : null}
+                {filteredFlights.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.flight_no} | {f.destination} | {f.departure_time.slice(0, 5)}
+                    {f.flight_no} | {f.destination} | {String(f.departure_time).slice(0, 5)}
                   </option>
                 ))}
               </select>
@@ -231,6 +253,7 @@ function CheckInInner() {
             <Row k="PASSENGER" v={confirm.full_name} />
             <Row k="PASSPORT" v={confirm.passport} />
             <Row k="FLIGHT" v={`${confirm.flight_no} → ${confirm.destination}`} />
+            <Row k="DATE" v={confirm.flight_date ?? flightDate} />
             <Row k="DEPARTURE" v={String(confirm.departure_time).slice(0, 5)} />
             <Row k="GATE / TERMINAL" v={`${confirm.gate} / ${confirm.terminal}`} />
             <Row k="SEAT" v={confirm.seat} highlight />
