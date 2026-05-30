@@ -61,7 +61,7 @@ function LoginPage() {
           >
             <Plane size={36} color="#00d4ff" className="sk-plane" />
             <h1 style={{ color: "#00d4ff", fontSize: 36, letterSpacing: "0.3em", margin: 0, fontWeight: 700, textShadow: "0 0 20px rgba(0,212,255,0.4)" }}>
-              SKYPORT
+              MAROPORT
             </h1>
           </motion.div>
           <div style={{ color: "#fbbf24", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase" }}>
